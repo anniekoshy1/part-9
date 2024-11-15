@@ -5,7 +5,7 @@ const Joi = require("joi");
 
 const app = express();
 app.use(cors());
-app.use(express.json()); // Added to parse JSON request bodies
+app.use(express.json()); 
 app.use(express.static("public"));
 
 const storage = multer.diskStorage({
@@ -447,11 +447,11 @@ const Images = {
               }
     ]
 };
-const itemSchema = Joi.object({ // Added Joi schema for validation
+const itemSchema = Joi.object({
   name: Joi.string().required(),
   brand: Joi.string().required(),
   price: Joi.number().required(),
-  img_name: Joi.string().required(), // Assuming img_name is required
+  img_name: Joi.string().required(),
   rating: Joi.number().required(),
   features: Joi.array().items(Joi.string()).required(),
 });
@@ -473,14 +473,14 @@ app.get("/api/gear", (req, res) => {
     res.json(Images.gear);
 });
 
-app.post("/api/gear", (req, res) => { // Added POST request to add new item
-  const { error } = itemSchema.validate(req.body); // Added Joi validation
+app.post("/api/gear", (req, res) => { 
+  const { error } = itemSchema.validate(req.body); 
   if (error) {
     return res.status(400).json({ success: false, message: error.details[0].message });
   }
 
-  const newItem = { ...req.body, _id: Images.gear.length + 1 }; // Added new item with _id
-  Images.gear.push(newItem); // Added new item to gear array
+  const newItem = { ...req.body, _id: Images.gear.length + 1 };
+  Images.gear.push(newItem);
   res.json({ success: true, newItem });
 });
 
