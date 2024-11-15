@@ -451,9 +451,9 @@ const itemSchema = Joi.object({
   name: Joi.string().required(),
   brand: Joi.string().required(),
   price: Joi.number().required(),
-  img_name: Joi.string().required(),
-  rating: Joi.number().required(),
-  features: Joi.array().items(Joi.string()).required(),
+  img_name: Joi.string().optional(),
+  rating: Joi.number().optional(),
+  features: Joi.array().items(Joi.string()).optional(),
 });
 
 app.get("/",(req,res)=>{
