@@ -1,9 +1,12 @@
 const express = require("express");
 const cors = require("cors");
+const multer = require("multer");
+const Joi = require("joi");
+
 const app = express();
 app.use(cors());
+app.use(express.json()); // Added to parse JSON request bodies
 app.use(express.static("public"));
-const multer = require("multer");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -444,12 +447,20 @@ const Images = {
               }
     ]
 };
+const itemSchema = Joi.object({ // Added Joi schema for validation
+  name: Joi.string().required(),
+  brand: Joi.string().required(),
+  price: Joi.string().required(),
+  img_name: Joi.string().required(), // Assuming img_name is required
+  rating: Joi.number().required(),
+  features: Joi.array().items(Joi.string()).required(),
+});
 
 app.get("/",(req,res)=>{
     res.sendFile(__dirname + "/index.html");
 });
 
-app.post("/api/upload", upload.single("Image"), (req, res) => {
+app.post("/api/upload", upload.single("gear"), (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
   }
@@ -458,8 +469,19 @@ app.post("/api/upload", upload.single("Image"), (req, res) => {
 });
 
 
-app.get("/api/gear", (req,res)=>{
-    res.json(Images);
+app.get("/api/gear", (req, res) => {
+    res.json(Images.gear);
+});
+
+app.post("/api/gear", (req, res) => { // Added POST request to add new item
+  const { error } = itemSchema.validate(req.body); // Added Joi validation
+  if (error) {
+    return res.status(400).json({ success: false, message: error.details[0].message });
+  }
+
+  const newItem = { ...req.body, _id: Images.gear.length + 1 }; // Added new item with _id
+  Images.gear.push(newItem); // Added new item to gear array
+  res.json({ success: true, newItem });
 });
 
 const PORT = process.env.PORT || 4000;
