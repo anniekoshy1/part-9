@@ -450,7 +450,7 @@ const Images = {
 const itemSchema = Joi.object({ // Added Joi schema for validation
   name: Joi.string().required(),
   brand: Joi.string().required(),
-  price: Joi.string().required(),
+  price: Joi.number().required(),
   img_name: Joi.string().required(), // Assuming img_name is required
   rating: Joi.number().required(),
   features: Joi.array().items(Joi.string()).required(),
