@@ -474,8 +474,10 @@ app.get("/api/gear", (req, res) => {
 });
 
 app.post("/api/gear", (req, res) => { 
+  console.log("Request body:", req.body);
   const { error } = itemSchema.validate(req.body); 
   if (error) {
+    console.log("Validation error:", error.details);
     return res.status(400).json({ success: false, message: error.details[0].message });
   }
 
