@@ -9,7 +9,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-// Configure Multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "./public/images/");
@@ -20,8 +19,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// MongoDB connection
-const mongoURI = process.env.MONGODB_URI || "mongodb://localhost:27017/gearInventory";
+const mongoURI = process.env.MONGODB_URI || "mongodb+srv://<username>:<password>@cluster0.mongodb.net/gearInventory?retryWrites=true&w=majority";
 
 mongoose
   .connect(mongoURI, {
@@ -35,7 +33,6 @@ mongoose
     console.error("MongoDB connection error:", err);
   });
 
-// Define MongoDB schema and model
 const gearSchema = new mongoose.Schema({
   name: { type: String, required: true },
   brand: { type: String, required: true },
@@ -47,7 +44,6 @@ const gearSchema = new mongoose.Schema({
 
 const Gear = mongoose.model("Gear", gearSchema);
 
-// Joi validation schema
 const itemSchema = Joi.object({
   name: Joi.string().required(),
   brand: Joi.string().required(),
@@ -57,14 +53,10 @@ const itemSchema = Joi.object({
   features: Joi.array().items(Joi.string()).optional(),
 });
 
-// Routes
-
-// Serve index.html (if applicable)
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-// File upload endpoint
 app.post("/api/upload", upload.single("gear"), (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
@@ -73,7 +65,6 @@ app.post("/api/upload", upload.single("gear"), (req, res) => {
   res.send({ message: "File uploaded successfully!", file: req.file });
 });
 
-// Get all gear items
 app.get("/api/gear", async (req, res) => {
   try {
     const items = await Gear.find();
@@ -84,7 +75,6 @@ app.get("/api/gear", async (req, res) => {
   }
 });
 
-// Add a new gear item
 app.post("/api/gear", async (req, res) => {
   const { error } = itemSchema.validate(req.body);
   if (error) {
@@ -103,7 +93,6 @@ app.post("/api/gear", async (req, res) => {
   }
 });
 
-// Edit a gear item
 app.put("/api/gear/:id", async (req, res) => {
   const { error } = itemSchema.validate(req.body);
   if (error) {
@@ -128,7 +117,6 @@ app.put("/api/gear/:id", async (req, res) => {
   }
 });
 
-// Delete a gear item
 app.delete("/api/gear/:id", async (req, res) => {
   try {
     const deletedItem = await Gear.findByIdAndDelete(req.params.id);
@@ -145,7 +133,6 @@ app.delete("/api/gear/:id", async (req, res) => {
   }
 });
 
-// Start the server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}...`);
