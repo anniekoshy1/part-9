@@ -9,6 +9,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
+// Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "./public/images");
@@ -19,16 +20,20 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-const mongoURI = process.env.MONGODB_URI || "mongodb+srv://<username>:<password>@cluster0.mongodb.net/gearInventory?retryWrites=true&w=majority";
+// MongoDB connection string
+const mongoURI =
+  process.env.MONGODB_URI ||
+  "mongodb+srv://XDZKLiHnK4GOFblC:nq4DrjfMWvkYMx1e@cluster0.mongodb.net/gearInventory?retryWrites=true&w=majority";
+
+// MongoDB connection
 mongoose
-  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    console.log("MongoDB connected successfully");
-  })
+  .connect(mongoURI)
+  .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => {
     console.error("MongoDB connection error:", err);
   });
 
+// Mongoose schema and model
 const gearSchema = new mongoose.Schema({
   name: { type: String, required: true },
   brand: { type: String, required: true },
@@ -39,6 +44,7 @@ const gearSchema = new mongoose.Schema({
 });
 const Gear = mongoose.model("Gear", gearSchema);
 
+// Joi validation schema
 const itemSchema = Joi.object({
   name: Joi.string().required(),
   brand: Joi.string().required(),
@@ -48,6 +54,7 @@ const itemSchema = Joi.object({
   features: Joi.array().items(Joi.string()).optional(),
 });
 
+// Routes
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
@@ -120,7 +127,8 @@ app.delete("/api/gear/:id", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 4000;
+// Start server
+const PORT = process.env.PORT || 10000; // Render uses dynamic ports, ensure this is correct
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}...`);
 });
