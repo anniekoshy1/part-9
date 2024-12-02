@@ -19,7 +19,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-const mongoURI = process.env.MONGODB_URI || "mongodb+srv://<username>:<password>@cluster0.mongodb.net/gearInventory?retryWrites=true&w=majority";
+const mongoURI =
+  process.env.MONGODB_URI ||
+  "mongodb+srv://XDZKLiHnK4GOFblC:nq4DrjfMWvkYMx1e@cluster0.s0qvw.mongodb.net/gearInventory?retryWrites=true&w=majority";
 
 mongoose
   .connect(mongoURI, {
