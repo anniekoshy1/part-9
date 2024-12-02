@@ -89,37 +89,73 @@ app.post("/api/gear", async (req, res) => {
 });
 
 app.put("/api/gear/:id", async (req, res) => {
+  // Validate the incoming data
   const { error } = itemSchema.validate(req.body);
   if (error) {
     console.log("Validation error:", error.details);
-    return res.status(400).json({ success: false, message: error.details[0].message });
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
   }
   try {
-    const updatedItem = await Gear.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // Find and update the gear item
+    const updatedItem = await Gear.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true } // Ensure validations during the update
+    );
     if (!updatedItem) {
-      return res.status(404).json({ success: false, message: "Item not found" });
+      // If the item is not found, return a 404 error
+      return res.status(404).json({
+        success: false,
+        message: "Item not found",
+      });
     }
     console.log("Gear item updated:", updatedItem);
-    res.json({ success: true, updatedItem });
+    res.json({
+      success: true,
+      updatedItem,
+    });
   } catch (err) {
     console.error("Error updating gear item:", err);
-    res.status(500).json({ success: false, message: "Failed to update gear item" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to update gear item",
+    });
   }
 });
 
 app.delete("/api/gear/:id", async (req, res) => {
   try {
+    // Find and delete the gear item
     const deletedItem = await Gear.findByIdAndDelete(req.params.id);
     if (!deletedItem) {
-      return res.status(404).json({ success: false, message: "Item not found" });
+      // If the item is not found, return a 404 error
+      return res.status(404).json({
+        success: false,
+        message: "Item not found",
+      });
     }
     console.log("Gear item deleted:", deletedItem);
-    res.json({ success: true, message: "Item deleted successfully" });
+    res.json({
+      success: true,
+      message: "Item deleted successfully",
+    });
   } catch (err) {
     console.error("Error deleting gear item:", err);
-    res.status(500).json({ success: false, message: "Failed to delete gear item" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete gear item",
+    });
   }
 });
+
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`, req.body);
+  next();
+});
+
 
 const PORT = process.env.PORT || 20000;
 app.listen(PORT, () => {
