@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage: storage });
- 
+
 const mongoURI = process.env.MONGODB_URI || "mongodb+srv://<username>:<password>@cluster0.mongodb.net/gearInventory?retryWrites=true&w=majority";
 mongoose
   .connect(mongoURI, {
@@ -50,7 +50,7 @@ const itemSchema = Joi.object({
   rating: Joi.number().optional(),
   features: Joi.array().items(Joi.string()).optional(),
 });
- 
+
 app.post("/api/upload", upload.single("gear"), (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
@@ -68,7 +68,7 @@ app.get("/api/gear", async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to fetch gear items" });
   }
 });
- 
+
 app.post("/api/gear", async (req, res) => {
   const { error } = itemSchema.validate(req.body);
   if (error) {
