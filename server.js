@@ -18,11 +18,8 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage: storage });
-
-const mongoURI =
-  process.env.MONGODB_URI ||
-  "mongodb+srv://XDZKLiHnK4GOFblC:nq4DrjfMWvkYMx1e@cluster0.s0qvw.mongodb.net/gearInventory?retryWrites=true&w=majority";
-
+ 
+const mongoURI = process.env.MONGODB_URI || "mongodb+srv://<username>:<password>@cluster0.mongodb.net/gearInventory?retryWrites=true&w=majority";
 mongoose
   .connect(mongoURI, {
     useNewUrlParser: true,
@@ -43,7 +40,6 @@ const gearSchema = new mongoose.Schema({
   rating: { type: Number },
   features: { type: [String] },
 });
-
 const Gear = mongoose.model("Gear", gearSchema);
 
 const itemSchema = Joi.object({
@@ -54,11 +50,7 @@ const itemSchema = Joi.object({
   rating: Joi.number().optional(),
   features: Joi.array().items(Joi.string()).optional(),
 });
-
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/index.html");
-});
-
+ 
 app.post("/api/upload", upload.single("gear"), (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
@@ -76,21 +68,17 @@ app.get("/api/gear", async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to fetch gear items" });
   }
 });
-
+ 
 app.post("/api/gear", async (req, res) => {
   const { error } = itemSchema.validate(req.body);
   if (error) {
-    console.log("Validation error:", error.details);
     return res.status(400).json({ success: false, message: error.details[0].message });
   }
-
   try {
     const newItem = new Gear(req.body);
     await newItem.save();
-    console.log("New gear item added:", newItem);
     res.status(201).json({ success: true, newItem });
   } catch (err) {
-    console.error("Error saving gear item:", err);
     res.status(500).json({ success: false, message: "Failed to add gear item" });
   }
 });
@@ -98,23 +86,15 @@ app.post("/api/gear", async (req, res) => {
 app.put("/api/gear/:id", async (req, res) => {
   const { error } = itemSchema.validate(req.body);
   if (error) {
-    console.log("Validation error:", error.details);
     return res.status(400).json({ success: false, message: error.details[0].message });
   }
-
   try {
-    const updatedItem = await Gear.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-
+    const updatedItem = await Gear.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updatedItem) {
       return res.status(404).json({ success: false, message: "Item not found" });
     }
-
-    console.log("Gear item updated:", updatedItem);
     res.json({ success: true, updatedItem });
   } catch (err) {
-    console.error("Error updating gear item:", err);
     res.status(500).json({ success: false, message: "Failed to update gear item" });
   }
 });
@@ -122,15 +102,11 @@ app.put("/api/gear/:id", async (req, res) => {
 app.delete("/api/gear/:id", async (req, res) => {
   try {
     const deletedItem = await Gear.findByIdAndDelete(req.params.id);
-
     if (!deletedItem) {
       return res.status(404).json({ success: false, message: "Item not found" });
     }
-
-    console.log("Gear item deleted:", deletedItem);
     res.json({ success: true, message: "Item deleted successfully" });
   } catch (err) {
-    console.error("Error deleting gear item:", err);
     res.status(500).json({ success: false, message: "Failed to delete gear item" });
   }
 });
