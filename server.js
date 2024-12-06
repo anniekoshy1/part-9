@@ -6,53 +6,44 @@ const mongoose = require('mongoose');
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Multer Storage Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, './public/images'); // Ensure the directory exists
+    cb(null, './public/images');
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname); // Unique filename
+    cb(null, Date.now() + '-' + file.originalname); 
   }
 });
 const upload = multer({ storage: storage });
 
-// MongoDB Connection
 const mongoURI = process.env.MONGODB_URI || "mongodb+srv://XDZKLiHnK4GOFblC:W4dYxNJsdhyqDjFm@cluster0.s0qvw.mongodb.net/";
 mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("MongoDB connected successfully"))
   .catch(err => console.error("MongoDB connection error:", err));
 
-// Mongoose Schema and Model
 const gearSchema = new mongoose.Schema({
   name: { type: String, required: true },
   brand: { type: String, required: true },
   price: { type: Number, required: true },
-  img_name: { type: String },
-  rating: { type: Number },
-  features: [String]
+  img_name: { type: String }
 });
 const Gear = mongoose.model('Gear', gearSchema);
 
-// Joi Schema for Validation
 const itemSchema = Joi.object({
   name: Joi.string().required(),
   brand: Joi.string().required(),
   price: Joi.number().required(),
-  img_name: Joi.string().optional(),
+  img_name: Joi.string().optional()
 });
 
-// Serve Static HTML
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
-// Upload Route (Handling file uploads)
 app.post('/api/upload', upload.single('gear'), (req, res) => {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
@@ -61,7 +52,6 @@ app.post('/api/upload', upload.single('gear'), (req, res) => {
   res.send({ message: 'File uploaded successfully!', file: req.file });
 });
 
-// Get all gear items
 app.get('/api/gear', async (req, res) => {
   try {
     const items = await Gear.find();
@@ -72,7 +62,6 @@ app.get('/api/gear', async (req, res) => {
   }
 });
 
-// Create a new gear item
 app.post('/api/gear', upload.single('gear'), async (req, res) => {
   const { error } = itemSchema.validate(req.body);
   if (error) {
@@ -82,7 +71,7 @@ app.post('/api/gear', upload.single('gear'), async (req, res) => {
   try {
     const newItem = new Gear({
       ...req.body,
-      img_name: req.file ? req.file.filename : null // Save file name
+      img_name: req.file ? req.file.filename : null
     });
     await newItem.save();
     console.log('New gear item added:', newItem);
@@ -103,7 +92,7 @@ app.put('/api/gear/:id', upload.single('gear'), async (req, res) => {
   try {
     const updatedData = {
       ...req.body,
-      ...(req.file && { img_name: req.file.filename }) // Update image if new one uploaded
+      ...(req.file && { img_name: req.file.filename })
     };
     const updatedItem = await Gear.findByIdAndUpdate(req.params.id, updatedData, { new: true });
     if (!updatedItem) {
@@ -117,7 +106,6 @@ app.put('/api/gear/:id', upload.single('gear'), async (req, res) => {
   }
 });
 
-// Delete a gear item by ID
 app.delete('/api/gear/:id', async (req, res) => {
   try {
     const deletedItem = await Gear.findByIdAndDelete(req.params.id);
@@ -132,7 +120,6 @@ app.delete('/api/gear/:id', async (req, res) => {
   }
 });
 
-// Listening on the desired port
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}...`);
