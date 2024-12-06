@@ -1,126 +1,84 @@
 const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
-const Joi = require('joi');
 const mongoose = require('mongoose');
-
+const multer = require('multer');
+const path = require('path');
+const cors = require('cors');
 const app = express();
-
-app.use(cors());
+// Middleware
 app.use(express.json());
-app.use(express.static('public'));
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, './public/images');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname); 
-  }
-});
-const upload = multer({ storage: storage });
-
-const mongoURI = process.env.MONGODB_URI || "mongodb+srv://XDZKLiHnK4GOFblC:W4dYxNJsdhyqDjFm@cluster0.s0qvw.mongodb.net/";
-mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch(err => console.error("MongoDB connection error:", err));
-
-const gearSchema = new mongoose.Schema({
+app.use(cors());
+// Connect to MongoDB
+mongoose
+  .connect('mongodb+srv://XDZKLiHnK4GOFblC:W4dYxNJsdhyqDjFm@cluster0.s0qvw.mongodb.net/', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.error('Error connecting to MongoDB:', err));
+// Define Item Schema
+const itemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   brand: { type: String, required: true },
   price: { type: Number, required: true },
-  img_name: { type: String }
+  image: { type: String, required: true },
 });
-const Gear = mongoose.model('Gear', gearSchema);
-
-const itemSchema = Joi.object({
-  name: Joi.string().required(),
-  brand: Joi.string().required(),
-  price: Joi.number().required(),
-  img_name: Joi.string().optional()
+const Item = mongoose.model('Item', itemSchema);
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
 });
-
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
-
-app.post('/api/upload', upload.single('gear'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).send('No file uploaded.');
-  }
-  console.log('File uploaded successfully:', req.file);
-  res.send({ message: 'File uploaded successfully!', file: req.file });
-});
-
-app.get('/api/gear', async (req, res) => {
+const upload = multer({ storage });
+// Serve uploaded images
+app.use('/uploads', express.static('uploads'));
+// Routes
+// Create (POST)
+app.post('/items', upload.single('image'), async (req, res) => {
   try {
-    const items = await Gear.find();
-    res.json(items);
-  } catch (err) {
-    console.error('Error fetching gear items:', err);
-    res.status(500).json({ success: false, message: 'Failed to fetch gear items' });
-  }
-});
-
-app.post('/api/gear', upload.single('gear'), async (req, res) => {
-  const { error } = itemSchema.validate(req.body);
-  if (error) {
-    console.log('Validation error:', error.details);
-    return res.status(400).json({ success: false, message: error.details[0].message });
-  }
-  try {
-    const newItem = new Gear({
-      ...req.body,
-      img_name: req.file ? req.file.filename : null
+    const { name, brand, price } = req.body;
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Image is required' });
+    }
+    const newItem = new Item({
+      name,
+      brand,
+      price: parseFloat(price),
+      image: req.file.filename,
     });
     await newItem.save();
-    console.log('New gear item added:', newItem);
     res.status(201).json({ success: true, newItem });
   } catch (err) {
-    console.error('Error saving gear item:', err);
-    res.status(500).json({ success: false, message: 'Failed to add gear item' });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
-
-// Update an existing gear item by ID
-app.put('/api/gear/:id', upload.single('gear'), async (req, res) => {
-  const { error } = itemSchema.validate(req.body);
-  if (error) {
-    console.log('Validation error:', error.details);
-    return res.status(400).json({ success: false, message: error.details[0].message });
-  }
+// Update (PUT)
+app.put('/items/:id', upload.single('image'), async (req, res) => {
   try {
-    const updatedData = {
-      ...req.body,
-      ...(req.file && { img_name: req.file.filename })
-    };
-    const updatedItem = await Gear.findByIdAndUpdate(req.params.id, updatedData, { new: true });
+    const { name, brand, price } = req.body;
+    const updateData = { name, brand, price: parseFloat(price) };
+    if (req.file) {
+      updateData.image = req.file.filename;
+    }
+    const updatedItem = await Item.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!updatedItem) {
       return res.status(404).json({ success: false, message: 'Item not found' });
     }
-    console.log('Gear item updated:', updatedItem);
     res.json({ success: true, updatedItem });
   } catch (err) {
-    console.error('Error updating gear item:', err);
-    res.status(500).json({ success: false, message: 'Failed to update gear item' });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
-
-app.delete('/api/gear/:id', async (req, res) => {
+// Delete (DELETE)
+app.delete('/items/:id', async (req, res) => {
   try {
-    const deletedItem = await Gear.findByIdAndDelete(req.params.id);
+    const deletedItem = await Item.findByIdAndDelete(req.params.id);
     if (!deletedItem) {
       return res.status(404).json({ success: false, message: 'Item not found' });
     }
-    console.log('Gear item deleted:', deletedItem);
-    res.json({ success: true, message: 'Item deleted successfully' });
+    res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting gear item:', err);
-    res.status(500).json({ success: false, message: 'Failed to delete gear item' });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
-
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}...`);
-});
+// Start the server
+app.listen(5000, () => console.log('Server running on port 5000'));
