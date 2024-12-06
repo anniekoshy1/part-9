@@ -3,8 +3,6 @@ const cors = require('cors');
 const multer = require('multer');
 const Joi = require('joi');
 const mongoose = require('mongoose');
-const fs = require('fs');
-const path = require('path');
 
 const app = express();
 
@@ -13,34 +11,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Ensure the images directory exists
-const imagesDir = './public/images';
-if (!fs.existsSync(imagesDir)) {
-  fs.mkdirSync(imagesDir, { recursive: true });
-}
-
 // Multer Storage Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, imagesDir);
+    cb(null, './public/images'); // Ensure the directory exists
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + '-' + file.originalname); // Unique filename
-  },
+  }
 });
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
 // MongoDB Connection
-const mongoURI =
-  process.env.MONGODB_URI ||
-  'mongodb+srv://XDZKLiHnK4GOFblC:W4dYxNJsdhyqDjFm@cluster0.s0qvw.mongodb.net/';
-mongoose
-  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1); // Exit process on DB connection failure
-  });
+const mongoURI = process.env.MONGODB_URI || "mongodb+srv://XDZKLiHnK4GOFblC:W4dYxNJsdhyqDjFm@cluster0.s0qvw.mongodb.net/";
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch(err => console.error("MongoDB connection error:", err));
 
 // Mongoose Schema and Model
 const gearSchema = new mongoose.Schema({
@@ -49,7 +35,7 @@ const gearSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   img_name: { type: String },
   rating: { type: Number },
-  features: [String],
+  features: [String]
 });
 const Gear = mongoose.model('Gear', gearSchema);
 
@@ -59,22 +45,20 @@ const itemSchema = Joi.object({
   brand: Joi.string().required(),
   price: Joi.number().required(),
   img_name: Joi.string().optional(),
-  rating: Joi.number().optional(),
-  features: Joi.array().items(Joi.string()).optional(),
 });
 
 // Serve Static HTML
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(__dirname + '/index.html');
 });
 
 // Upload Route (Handling file uploads)
 app.post('/api/upload', upload.single('gear'), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    return res.status(400).send('No file uploaded.');
   }
   console.log('File uploaded successfully:', req.file);
-  res.json({ success: true, message: 'File uploaded successfully!', file: req.file });
+  res.send({ message: 'File uploaded successfully!', file: req.file });
 });
 
 // Get all gear items
@@ -92,13 +76,13 @@ app.get('/api/gear', async (req, res) => {
 app.post('/api/gear', upload.single('gear'), async (req, res) => {
   const { error } = itemSchema.validate(req.body);
   if (error) {
-    console.error('Validation error:', error.details);
+    console.log('Validation error:', error.details);
     return res.status(400).json({ success: false, message: error.details[0].message });
   }
   try {
     const newItem = new Gear({
       ...req.body,
-      img_name: req.file ? req.file.filename : null,
+      img_name: req.file ? req.file.filename : null // Save file name
     });
     await newItem.save();
     console.log('New gear item added:', newItem);
@@ -113,17 +97,15 @@ app.post('/api/gear', upload.single('gear'), async (req, res) => {
 app.put('/api/gear/:id', upload.single('gear'), async (req, res) => {
   const { error } = itemSchema.validate(req.body);
   if (error) {
-    console.error('Validation error:', error.details);
+    console.log('Validation error:', error.details);
     return res.status(400).json({ success: false, message: error.details[0].message });
   }
   try {
     const updatedData = {
       ...req.body,
-      ...(req.file && { img_name: req.file.filename }), // Update image if new one uploaded
+      ...(req.file && { img_name: req.file.filename }) // Update image if new one uploaded
     };
-    const updatedItem = await Gear.findByIdAndUpdate(req.params.id, updatedData, {
-      new: true,
-    });
+    const updatedItem = await Gear.findByIdAndUpdate(req.params.id, updatedData, { new: true });
     if (!updatedItem) {
       return res.status(404).json({ success: false, message: 'Item not found' });
     }
@@ -149,9 +131,6 @@ app.delete('/api/gear/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to delete gear item' });
   }
 });
-console.log('Request body:', req.body);
-console.log('Uploaded file:', req.file);
-
 
 // Listening on the desired port
 const PORT = process.env.PORT || 4000;
